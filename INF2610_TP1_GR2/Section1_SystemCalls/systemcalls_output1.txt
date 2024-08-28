@@ -1,0 +1,57 @@
+pwd:
+/home/iyers16/poly/inf2610/INF2610_TP1_GR2/Section1_SystemCalls
+
+ls:
+Makefile
+systemcalls_output1.txt
+systemcalls_output2.txt
+systemcalls_part1.c
+systemcalls_part2.c
+
+ls | sort:
+Makefile
+systemcalls_output1.txt
+systemcalls_output2.txt
+systemcalls_part1.c
+systemcalls_part2.c
+
+echo "message1":
+message1
+
+cat foo.txt:
+message1
+message2
+
+ls:
+Makefile
+systemcalls_output1.txt
+systemcalls_output2.txt
+systemcalls_part1.c
+systemcalls_part2.c
+
+uname:
+Linux
+
+uname -s:
+Linux
+
+uname -r:
+6.9.3-76060903-generic
+
+uname -o:
+GNU/Linux
+
+uname -m:
+x86_64
+
+echo $PATH:
+/home/iyers16/.nvm/versions/node/v22.3.0/bin:/opt/maven/bin:/home/iyers16/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/iyers16/.local/share/JetBrains/Toolbox/scripts:/usr/local/go/bin:/home/iyers16/Android/Sdk/emulator:/home/iyers16/Android/Sdk/platform-tools
+
+which sleep:
+/usr/bin/sleep
+
+./sleep 1
+/usr/bin/sleep 1
+../../../../../../usr/bin/sleep 1
+
+sleep 1000

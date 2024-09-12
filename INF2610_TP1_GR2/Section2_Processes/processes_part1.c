@@ -16,7 +16,8 @@ void spawn_child_processes(int level, int num_children, int ctr)
     {
         if ((child_pid = fork()) == 0)
         {
-            printf("\n\t\tLevel %d.%d\t PID=%d\t PPID=%d\n", level, ctr+i-1, getpid(), getppid());
+            registerProc(getpid(), getppid(), 2, ctr+i-1);
+            printf("\n\t\tLevel %d.%d\t PID=%d\t PPID=%d\n", level, ctr + i - 1, getpid(), getppid());
             _exit(0);
         }
         waitpid(child_pid, NULL, 0);
@@ -30,6 +31,7 @@ void question1()
     pid_t kids1 = fork();
     if (kids1 == 0)
     {
+        registerProc(getpid(), getppid(), 1, 1);
         printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 1, getpid(), getppid());
         spawn_child_processes(2, 1, ctr);
         _exit(0);
@@ -40,6 +42,7 @@ void question1()
     pid_t kids2 = fork();
     if (kids2 == 0)
     {
+        registerProc(getpid(), getppid(), 1, 2);
         printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 2, getpid(), getppid());
         spawn_child_processes(2, 1, ctr);
         _exit(0);
@@ -50,10 +53,12 @@ void question1()
     pid_t kids3 = fork();
     if (kids3 == 0)
     {
+        registerProc(getpid(), getppid(), 1, 3);
         printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 3, getpid(), getppid());
-        spawn_child_processes(2, 3, ctr);
+        spawn_child_processes(2, 4, ctr);
         _exit(0);
     }
     ctr += 3;
     waitpid(kids3, NULL, 0);
+    printProcRegistrations();
 }

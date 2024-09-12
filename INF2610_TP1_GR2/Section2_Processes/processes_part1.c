@@ -8,16 +8,16 @@
 
 #include "libprocesslab/libprocesslab.h"
 
-void spawn_child_processes(int n)
+void spawn_child_processes(int n, int curr)
 {
     pid_t child_pid;
 
     //Father code (before child processes start)
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 1; i <= n; i++) {
         if ((child_pid = fork()) == 0) {
             //child code
-            printf("\nPID=%d\t PPID=%d\n", getpid(), getppid());
+            printf("\n%d.%d\t PID=%d\t PPID=%d\n", curr, i, getpid(), getppid());
             exit(0);
         }
     }
@@ -30,10 +30,11 @@ void spawn_child_processes(int n)
 
 void question1()
 {
-    for (int i = 0; i < 2 ; ++i)
+    printf("\nPID=%d\n", getpid());
+    for (int i = 1; i <= 2 ; ++i)
     {
-        spawn_child_processes(2);
+        spawn_child_processes(2, i);
     }
-    printf("\nPID=%d\t PPID=%d\n", getpid(), getppid());
+    
 }
 

@@ -3,38 +3,57 @@
  * Automne 2024
  * Processes - part1.c
  *
- * Ajoutez vos noms, prénoms et matricules
-*/
+ * Shanmukh Iyer 2251732;
+ */
 
 #include "libprocesslab/libprocesslab.h"
 
-void spawn_child_processes(int n, int curr)
+void spawn_child_processes(int level, int num_children, int ctr)
 {
     pid_t child_pid;
 
-    //Father code (before child processes start)
-
-    for (int i = 1; i <= n; i++) {
-        if ((child_pid = fork()) == 0) {
-            //child code
-            printf("\n%d.%d\t PID=%d\t PPID=%d\n", curr, i, getpid(), getppid());
-            exit(0);
+    for (int i = 1; i <= num_children; i++)
+    {
+        if ((child_pid = fork()) == 0)
+        {
+            printf("\n\t\tLevel %d.%d\t PID=%d\t PPID=%d\n", level, ctr+i-1, getpid(), getppid());
+            _exit(0);
         }
+        waitpid(child_pid, NULL, 0);
     }
-
-    while (wait(NULL) > 0); // this way, the father waits for all the child processes 
-
-    //Father code (After all child processes end)
-    // printf("\nPID=%d\t PPID=%d\n", getpid(), getppid());
 }
 
 void question1()
 {
-    printf("\nPID=%d\n", getpid());
-    for (int i = 1; i <= 2 ; ++i)
+    printf("\nLevel 0 PID=%d\n", getpid());
+    int ctr = 1;
+    pid_t kids1 = fork();
+    if (kids1 == 0)
     {
-        spawn_child_processes(2, i);
+        printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 1, getpid(), getppid());
+        spawn_child_processes(2, 1, ctr);
+        _exit(0);
     }
-    
-}
+    ctr += 1;
+    waitpid(kids1, NULL, 0);
 
+    pid_t kids2 = fork();
+    if (kids2 == 0)
+    {
+        printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 2, getpid(), getppid());
+        spawn_child_processes(2, 1, ctr);
+        _exit(0);
+    }
+    ctr += 1;
+    waitpid(kids2, NULL, 0);
+
+    pid_t kids3 = fork();
+    if (kids3 == 0)
+    {
+        printf("\n\tLevel %d.%d\t PID=%d\t PPID=%d\n", 1, 3, getpid(), getppid());
+        spawn_child_processes(2, 3, ctr);
+        _exit(0);
+    }
+    ctr += 3;
+    waitpid(kids3, NULL, 0);
+}

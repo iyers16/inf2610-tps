@@ -8,6 +8,17 @@
 
 #include "libprocesslab/libprocesslab.h"
 
+void spawn_child(int level, int pctr)
+{
+    pid_t child;
+    if((child = fork()) == 0)
+    {
+        registerProc(getpid(), getppid(), level, pctr);
+        _exit(0);
+    }
+    waitpid(child, NULL, 0);
+}
+
 void question1()
 {
     registerProc(getpid(), getppid(), 0, 0);
@@ -16,13 +27,7 @@ void question1()
     if ((proc11 = fork()) == 0)
     {
         registerProc(getpid(), getppid(), 1, 1);
-        pid_t proc21;
-        if((proc21 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 1);
-            _exit(0);
-        }
-        waitpid(proc21, NULL, 0);
+        spawn_child(2, 1);
         _exit(0);
     }
     waitpid(proc11, NULL, 0);
@@ -30,13 +35,7 @@ void question1()
     if ((proc12 = fork()) == 0)
     {
         registerProc(getpid(), getppid(), 1, 2);
-        pid_t proc22;
-        if((proc22 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 2);
-            _exit(0);
-        }
-        waitpid(proc22, NULL, 0);
+        spawn_child(2, 2);
         _exit(0);
     }
     waitpid(proc12, NULL, 0);
@@ -44,34 +43,10 @@ void question1()
     if ((proc13 = fork()) == 0)
     {
         registerProc(getpid(), getppid(), 1, 3);
-        pid_t proc23, proc24, proc25, proc26;
-        if((proc23 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 3);
-            _exit(0);
-        }
-        waitpid(proc23, NULL, 0);
-
-        if((proc24 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 4);
-            _exit(0);
-        }
-        waitpid(proc24, NULL, 0);
-
-        if((proc25 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 5);
-            _exit(0);
-        }
-        waitpid(proc25, NULL, 0);
-
-        if((proc26 = fork()) == 0)
-        {
-            registerProc(getpid(), getppid(), 2, 6);
-            _exit(0);
-        }
-        waitpid(proc26, NULL, 0);
+        spawn_child(2, 3);
+        spawn_child(2, 4);
+        spawn_child(2, 5);
+        spawn_child(2, 6);
         _exit(0);
     }
     waitpid(proc13, NULL, 0);

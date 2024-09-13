@@ -3,7 +3,7 @@
  * Automne 2024
  * Processes - part1.c
  *
- * Shanmukh Iyer 2251732;
+ * Shanmukh Iyer 2251372; Michael Imbert 2212593
  */
 
 #include "libprocesslab/libprocesslab.h"
@@ -26,6 +26,7 @@ void spawn_child_processes(int level, int num_children, int ctr)
 
 void question1()
 {
+    registerProc(getpid(), getppid(), 0,0);
     printf("\nLevel 0 PID=%d\n", getpid());
     int ctr = 1;
     pid_t kids1 = fork();
@@ -61,4 +62,5 @@ void question1()
     ctr += 3;
     waitpid(kids3, NULL, 0);
     printProcRegistrations();
+    _exit(0);
 }

@@ -3,7 +3,7 @@
  * Automne 2024
  * Processes - part2.c
  *
- * Ajoutez vos noms, prénoms et matricules
+ * Shanmukh Iyer 2251372; Michael Imbert 2212593
 */
 
 #include "./libprocesslab/libprocesslab.h"

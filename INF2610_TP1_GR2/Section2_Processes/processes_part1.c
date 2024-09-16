@@ -30,7 +30,7 @@ void question1()
         spawn_child(2, 1);
         _exit(0);
     }
-    // waitpid(proc11, NULL, 0);
+    waitpid(proc11, NULL, 0);
 
     if ((proc12 = fork()) == 0)
     {
@@ -38,7 +38,7 @@ void question1()
         spawn_child(2, 2);
         _exit(0);
     }
-    // waitpid(proc12, NULL, 0);
+    waitpid(proc12, NULL, 0);
 
     if ((proc13 = fork()) == 0)
     {
@@ -49,13 +49,7 @@ void question1()
         spawn_child(2, 6);
         _exit(0);
     }
-    // waitpid(proc13, NULL, 0);
-    int status = 0;
-    pid_t wpid;
-    int procctr = 0;
-    while((wpid = wait(&status)) > 0) {procctr++;}
-
-    printf("\nNumber of subprocesses of %d: %d\n", getpid(), procctr);
+    waitpid(proc13, NULL, 0);
 
     printProcRegistrations();
     execlp("ls", "ls", "-l", NULL);

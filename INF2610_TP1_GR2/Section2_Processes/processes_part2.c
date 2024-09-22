@@ -12,63 +12,49 @@
 // question2 calcule la somme des m premiers nombres naturels 1+2+...+m
 
 // nb est le nombre de threads qui vont contribuer au calcul
-#define nb 4
+#define nb 8
 
-// tableau somme est utilisé pour le calcul des sommes patielles par les threads
-long somme[nb];
-
-typedef struct
-{
-  int start;
-  int end;
-  int thread_num;
-} thread_args_t;
+// tableau somme est utilisé pour le calcul des sommes partielles par les threads
+typedef unsigned long long ull_t;
+ull_t somme[nb];
 
 // fonction exécutée par chaque thread créé
 void *contribution(void *p)
 {
-  int tid = *(int *)p;
-  int upper = (tid * m) / nb;
-  int lower;
-  if (tid == 1)
-  {
-    lower = 1;
-  }
-  else
-  {
-    lower = ((tid-1) * m) / nb;
-  }
-  int sum = 0;
-  for (int i = lower; i <= upper; ++i)
-  {
-    sum += i;
-  }
-  somme[tid] = sum;
-  printf("Sum of tid=%d is %ld\n", tid, somme[tid]);
+  int thread_id = *((int *)p);
+  free(p);
+  int segment = m/nb;
+  int min_sum_term = ((thread_id - 1) * segment) + 1;
+  int max_sum_term = thread_id * segment;
+  ull_t partial_sum = ((ull_t)min_sum_term + (ull_t)max_sum_term) * segment / 2;
+  printf("\nThread %d Partial sum =\t%llu\n",thread_id, partial_sum);
+  somme[thread_id - 1] = partial_sum;
   return NULL;
 }
 
 void question2()
 {
-  pthread_t t1, t2, t3, t4;
-  int thread_ctr = 1;
-  pthread_create(&t1, NULL, contribution, &thread_ctr);
-  pthread_join(t1, NULL);
-  ++thread_ctr;
+  pthread_t threads[nb];
+  ull_t sum_total = 0;
 
-  pthread_create(&t2, NULL, contribution, &thread_ctr);
-  pthread_join(t2, NULL);
-  ++thread_ctr;
+  for (int i = 0; i < nb; i++)
+  {
+    int *thread_id = malloc(sizeof(int));
+    *thread_id = i + 1;
+    pthread_create(&threads[i], NULL, contribution, (void *)thread_id);
+  }
+  for (int i = 0; i < nb; i++)
+  {
+    pthread_join(threads[i], NULL);
+  }
 
-  pthread_create(&t3, NULL, contribution, &thread_ctr);
-  pthread_join(t3, NULL);
-  ++thread_ctr;
+  for (int i = 0; i < nb; ++i)
+  {
+    sum_total += somme[i];
+  }
 
-  pthread_create(&t4, NULL, contribution, &thread_ctr);
-  pthread_join(t4, NULL);
+  ull_t expected_sum_total = ((ull_t)m * (ull_t)(m+1))/2;
 
-  
-  unsigned long long realsum = (m * (m+1))/2;
-  printf("Real sum = %llu\n", realsum);
-  _exit(0);
+  printf("\nExpected: %llu\tResult: %llu\n", expected_sum_total, sum_total);
+  return;
 }

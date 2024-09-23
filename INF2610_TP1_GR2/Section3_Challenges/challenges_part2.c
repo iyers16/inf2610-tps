@@ -3,7 +3,7 @@
  * Automne 2024
  * Challenges - part2.c
  *
- * Ajoutez vos noms, prénoms et matricules
+ * Shanmukh Iyer 2251372; Michael Imbert 2212593
 */
 #include "challenges_part2.h"
 

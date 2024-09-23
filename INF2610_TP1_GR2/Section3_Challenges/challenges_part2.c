@@ -8,10 +8,34 @@
 #include "challenges_part2.h"
 
 Matrix* multiply(Matrix* A, Matrix* B) {
-    
-    // TODO
+    // Check if matrix multiplication is possible
+    if (A->cols != B->rows) {
+        perror("Size incompatibility");
+        return NULL;
+    }
 
-    return (void*)1;
+    // Allocate memory for the result matrix
+    Matrix* result = (Matrix*)malloc(sizeof(Matrix));
+    result->rows = A->rows;
+    result->cols = B->cols;
+    
+    // Allocate memory for the matrix elements
+    result->matrix = (short**)malloc(result->rows * sizeof(short*));
+    for (int i = 0; i < result->rows; i++) {
+        result->matrix[i] = (short*)malloc(result->cols * sizeof(short));
+    }
+
+    // Perform matrix multiplication
+    for (int i = 0; i < A->rows; i++) {
+        for (int j = 0; j < B->cols; j++) {
+            result->matrix[i][j] = 0; // Initialize to zero
+            for (int k = 0; k < A->cols; k++) {
+                result->matrix[i][j] += A->matrix[i][k] * B->matrix[k][j];
+            }
+        }
+    }
+
+    return result;
 }
 
 

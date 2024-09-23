@@ -5,8 +5,8 @@ mac:
 	gcc -O0 -std=gnu11 -Werror -Wall -Wno-unused-result -Wno-unused-variable -o challenges_part1 ./challenges_part1.c
 
 test:
-	gcc -O0 -std=gnu11 -Werror -Wall -Wno-unused-result -Wno-unused-variable -c challenges_part2.c -o challenges_part2.o
-	gcc -O0 -std=gnu11 -Werror -Wall -Wno-unused-result -Wno-unused-variable -o test_part2 challenges_part2.o test_part2.o
+	gcc -O0 -std=gnu11 -Werror -Wall -Wno-unused-result -Wno-unused-variable -fPIE -c challenges_part2.c -o challenges_part2.o
+	gcc -O0 -std=gnu11 -Werror -Wall -Wno-unused-result -Wno-unused-variable -no-pie -o test_part2 challenges_part2.o test_part2.o
 
 
 handin:

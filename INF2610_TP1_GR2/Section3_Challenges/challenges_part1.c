@@ -7,72 +7,94 @@
  */
 #include "challenges_part1.h"
 
-void print_indents(int num, int fd)
-{
-    for (size_t i = 0; i < num; i++)
-    {
-        dprintf(fd, "    ");
-    }
-}
-
 void traverse(char *filename, int indent, int fd)
 {
     DIR *dir;
-    dirent *entry;
+    struct dirent *entry;
     struct stat info;
+    struct stat parent_info;
     char path[500];
+    char file_names[100][256]; 
+    int file_counter = 0;
 
-    // printing the curr directory name/path
-    print_indents(indent, fd);
-    dprintf(fd, "%s\n", filename);
-    
+    // info sur actuel
+    if (stat(filename, &info) != 0)
+    {
+        perror("stat() child error");
+        _exit(3);
+    }
+
+    // info sur parent
+    char parent_path[500];
+    strcpy(parent_path, filename);
+    strcat(parent_path, "/..");
+
+    if (stat(parent_path, &parent_info) != 0)
+    {
+        perror("stat() parent error");
+        _exit(4);
+    }
 
     if ((dir = opendir(filename)) == NULL)
     {
-        // this dir could not be opened
         perror("opendir() error");
         _exit(2);
     }
     else
     {
-        int file_counter = 0;
         while ((entry = readdir(dir)) != NULL)
         {
-            // we are able to read an entry in this stream still
             if (entry->d_name[0] != '.')
             {
-                // we have discarded use of the . and .. dirs
-
-                // build the next path
                 strcpy(path, filename);
                 strcat(path, "/");
                 strcat(path, entry->d_name);
+
                 if (stat(path, &info) != 0)
                 {
-                    // could not retrieve info on this inode path
-                    perror("stat()");
+                    perror("stat() error");
                     _exit(3);
                 }
-                else if (S_ISDIR(info.st_mode))
+
+                if (S_ISDIR(info.st_mode))
                 {
-                    // we have a subdir in this dir
-                    traverse(path, indent + 1, fd);
+                    pid_t child;
+                    if ((child = fork()) == 0)
+                    {
+                        traverse(path, indent + 1, fd);
+                        _exit(0);
+                    }
+                    waitpid(child, NULL, 0);
                 }
-                else
+                else if (strstr(entry->d_name, ".txt"))
                 {
-                    // we have a file in this dir
-                    print_indents(indent + 1, fd);
-                    dprintf(fd, "%s\n", entry->d_name);
-                    ++file_counter;
+                    if (file_counter < 100)
+                    {
+                        strcpy(file_names[file_counter++], entry->d_name);
+                    }
                 }
             }
         }
 
+        // info actuel
+        dprintf(fd, "Répertoire: %s\n", filename);
+        dprintf(fd, "Inode du répertoire: %ld\n", info.st_ino);
+        dprintf(fd, "Inode du répertoire parent: %ld\n", parent_info.st_ino);
+        dprintf(fd, "Nombre de fichiers texte: %d\n", file_counter);
+
+        // info parent
+        for (int i = 0; i < file_counter; i++)
+        {
+            dprintf(fd, "       {%s}\n", file_names[i]);
+        }
+
         if (file_counter == 0)
         {
-            print_indents(indent + 1, fd);
-            dprintf(fd, "{Aucun fichier .txt dans ce dir}\n");
+            dprintf(fd, "{Aucun fichier .txt dans ce répertoire}\n");
         }
+
+        dprintf(fd, "\n\n");
+
         closedir(dir);
     }
 }

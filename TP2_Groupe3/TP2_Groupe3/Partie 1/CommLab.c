@@ -8,18 +8,18 @@ int main(int argc, char** argv) {
 
     // QUESTION 1 --------------------------------------
     // Compile question 1:
-    // if (!fork()) {
-    //     execlp("gcc", "gcc", "-o", "ansq1", "TubesNommes.c", NULL);
-    // }
-    // wait(NULL);
+    if (!fork()) {
+        execlp("gcc", "gcc", "-o", "ansq1", "TubesNommes.c", NULL);
+    }
+    wait(NULL);
     
-    // // run the solution
-    // if (!fork()) {
-    //     execl("./ansq1", "ansq1", NULL);
-    // }
+    // run the solution
+    if (!fork()) {
+        execl("./ansq1", "ansq1", NULL);
+    }
     
-    // wait(NULL);
-    // unlink("ansq1");
+    wait(NULL);
+    unlink("ansq1");
     
     // QUESTION 2 --------------------------------------
     // compile question 2

@@ -14,7 +14,7 @@
 
 
 #define MAX_ARRAY_SIZE 1000000
-#define MAX_NUM_SIZE 100000
+#define MAX_NUM_SIZE 1000000
 #define SEM_NAME "/merge_sort_sem"
 
 #ifndef MAP_ANONYMOUS
@@ -39,3 +39,4 @@ void merge(int left, int mid, int right);
 void execute_merge_sort(int start, int end, int num_processes);
 void show_array();
 void write_array_into_file(int start, int end, int *array);
+void write_initial_array(int array_size, int *array);

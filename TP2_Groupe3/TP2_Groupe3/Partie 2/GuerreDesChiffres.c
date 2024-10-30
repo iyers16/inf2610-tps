@@ -4,164 +4,160 @@
 #include <signal.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdbool.h>
+#include <semaphore.h>
 
-#define MAX_BUFFER_SIZE 100
+#define WRAP_AROUND(index, size) ((index + 1) % size)
 
-int *buffer;
-int buffer_size;
-int in = 0, out = 0;
-int total_produced = 0, total_consumed = 0;
-int sum_produced = 0, sum_consumed = 0;
-int flag_de_fin = 0;
+volatile int *bounded_buffer;
+int buff_size;
+volatile long long int prod_sum = 0;
+volatile long long int cons_sum = 0;
+volatile int prod_idx = 0;
+volatile int cons_idx = 0;
+volatile int prod_ctr = 0;
+volatile int cons_ctr = 0;
+volatile bool flag_de_fin = false;
 
-// Mutex and condition variables
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t buffer_not_full = PTHREAD_COND_INITIALIZER;
-pthread_cond_t buffer_not_empty = PTHREAD_COND_INITIALIZER;
+// Sémaphores pour la synchronisation
+sem_t sem_empty; // Compte les cases vides dans le buffer
+sem_t sem_full;  // Compte les cases pleines dans le buffer
+sem_t sem_mutex; // Contrôle l'accès exclusif au buffer
 
-// Signal handler for SIGALRM
-void alarm_handler(int sig) {
-    flag_de_fin = 1;
+void handle_alarm(int sig)
+{
+    flag_de_fin = true;
 }
 
-// Producer function
-void* producteur(void* pid) {
-    int* producer_sum = malloc(sizeof(int));
-    *producer_sum = 0;
-
-    while (1) {
-        if (flag_de_fin) break;
-
-        // Generate a random number between 1 and 9
-        int num = (rand() % 9) + 1;
-
-        // Lock buffer and add item
-        pthread_mutex_lock(&mutex);
-        while ((in + 1) % buffer_size == out) {
-            pthread_cond_wait(&buffer_not_full, &mutex);
+void *producteur(void *pid)
+{
+    int *id = (int *)pid;
+    int *local_sum = malloc(sizeof(int));
+    *local_sum = 0;
+    while (true)
+    {
+        sem_wait(&sem_empty);
+        if (flag_de_fin)
+        {
+            sem_post(&sem_empty);
+            break;
         }
-
-        // Insert item into buffer
-        buffer[in] = num;
-        in = (in + 1) % buffer_size;
-        total_produced++;
-        *producer_sum += num;
-        sum_produced += num;
-
-        // Signal to consumers
-        pthread_cond_signal(&buffer_not_empty);
-        pthread_mutex_unlock(&mutex);
+        sem_wait(&sem_mutex);
+        int val = (rand() % 9) + 1;
+        bounded_buffer[prod_idx] = val;
+        prod_sum += val;
+        *local_sum += val;
+        prod_idx = WRAP_AROUND(prod_idx, buff_size);
+        prod_ctr++;
+        sem_post(&sem_mutex);
+        sem_post(&sem_full);
     }
 
-    pthread_exit((void*) producer_sum);
+    pthread_exit((void *)local_sum);
 }
 
-// Consumer function
-void* consommateur(void* cid) {
-    int* consumer_sum = malloc(sizeof(int));
-    *consumer_sum = 0;
+void *consommateur(void *cid)
+{
+    int *id = (int *)cid;
+    int *local_sum = malloc(sizeof(int));
+    *local_sum = 0;
 
-    while (1) {
-        pthread_mutex_lock(&mutex);
-
-        while (in == out) {
-            pthread_cond_wait(&buffer_not_empty, &mutex);
+    while (true)
+    {
+        sem_wait(&sem_full);
+        sem_wait(&sem_mutex);
+        int val = bounded_buffer[cons_idx];
+        cons_sum += val;
+        *local_sum += val;
+        cons_idx = WRAP_AROUND(cons_idx, buff_size);
+        cons_ctr++;
+        sem_post(&sem_mutex);
+        sem_post(&sem_empty);
+        if (val == 0)
+        {
+            break;
         }
-
-        // Remove item from buffer
-        int num = buffer[out];
-        out = (out + 1) % buffer_size;
-        total_consumed++;
-        *consumer_sum += num;
-        sum_consumed += num;
-
-        // Signal to producers
-        pthread_cond_signal(&buffer_not_full);
-        pthread_mutex_unlock(&mutex);
-
-        if (num == 0) break; // Stop on receiving 0
     }
 
-    pthread_exit((void*) consumer_sum);
+    pthread_exit((void *)local_sum);
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s <num_producers> <num_consumers> <buffer_size>\n", argv[0]);
-        exit(1);
+int main(int argc, char *argv[])
+{
+    if (argc != 4)
+    {
+        perror("\nUsage: ./GuerreDesChiffres <num_producers> <num_consumers> <buffer_size>\n");
+        _exit(1);
     }
+    const int producers = atoi(argv[1]);
+    const int consumers = atoi(argv[2]);
+    buff_size = atoi(argv[3]);
 
-    int num_producers = atoi(argv[1]);
-    int num_consumers = atoi(argv[2]);
-    buffer_size = atoi(argv[3]);
+    bounded_buffer = (int *) malloc(buff_size * sizeof(int));
+    pthread_t *prod_arr = (pthread_t *) malloc(producers * sizeof(pthread_t));
+    pthread_t *cons_arr = (pthread_t *) malloc(consumers * sizeof(pthread_t));
+    sem_init(&sem_empty, 0, buff_size); // Commence avec toutes les cases vides
+    sem_init(&sem_full, 0, 0);          // Commence sans cases pleines
+    sem_init(&sem_mutex, 0, 1);         // Sémaphore binaire pour l'accès exclusif au buffer
 
-    if (buffer_size > MAX_BUFFER_SIZE) {
-        fprintf(stderr, "Buffer size exceeds maximum allowed size.\n");
-        exit(1);
-    }
-
-    // Initialize buffer
-    buffer = malloc(buffer_size * sizeof(int));
-
-    // Set up signal handling
-    signal(SIGALRM, alarm_handler);
+    signal(SIGALRM, handle_alarm);
     alarm(1);
 
-    // Create producer and consumer threads
-    pthread_t producers[num_producers], consumers[num_consumers];
-    int producer_ids[num_producers], consumer_ids[num_consumers];
-
-    srand(time(NULL)); // Seed the random number generator
-
-    for (int i = 0; i < num_producers; i++) {
-        producer_ids[i] = i;
-        pthread_create(&producers[i], NULL, producteur, &producer_ids[i]);
+    for (int i = 0; i < producers; i++)
+    {
+        int *id = malloc(sizeof(int));
+        *id = i;
+        pthread_create(&prod_arr[i], NULL, producteur, (void *) id);
     }
 
-    for (int i = 0; i < num_consumers; i++) {
-        consumer_ids[i] = i;
-        pthread_create(&consumers[i], NULL, consommateur, &consumer_ids[i]);
+    for (int i = 0; i < consumers; i++)
+    {
+        int *id = malloc(sizeof(int));
+        *id = i;
+        pthread_create(&cons_arr[i], NULL, consommateur, (void *) id);
     }
 
-    // Wait for producers to finish
-    int total_produced_sum = 0;
-    for (int i = 0; i < num_producers; i++) {
-        int *prod_sum;
-        pthread_join(producers[i], (void**) &prod_sum);
-        total_produced_sum += *prod_sum;
-        free(prod_sum);
+    long long total_prod_sum = 0;
+    for (int i = 0; i < producers; i++)
+    {
+        int *local_sum;
+        pthread_join(prod_arr[i], (void **) &local_sum);
+        total_prod_sum += *local_sum;
+        free(local_sum);
     }
 
-    // Send termination signals to consumers
-    for (int i = 0; i < num_consumers; i++) {
-        pthread_mutex_lock(&mutex);
-        while ((in + 1) % buffer_size == out) {
-            pthread_cond_wait(&buffer_not_full, &mutex);
-        }
-        buffer[in] = 0; // Signal consumer to stop
-        in = (in + 1) % buffer_size;
-        pthread_cond_signal(&buffer_not_empty);
-        pthread_mutex_unlock(&mutex);
+    for (int i = 0; i < consumers; i++)
+    {
+        sem_wait(&sem_empty);
+
+        sem_wait(&sem_mutex);
+        bounded_buffer[prod_idx] = 0;
+        prod_idx = WRAP_AROUND(prod_idx, buff_size);
+        sem_post(&sem_mutex);
+        sem_post(&sem_full);
     }
 
-    // Wait for consumers to finish
-    int total_consumed_sum = 0;
-    for (int i = 0; i < num_consumers; i++) {
-        int *cons_sum;
-        pthread_join(consumers[i], (void**) &cons_sum);
-        total_consumed_sum += *cons_sum;
-        free(cons_sum);
+    long long total_cons_sum = 0;
+    for (int i = 0; i < consumers; i++)
+    {
+        int *local_sum;
+        pthread_join(cons_arr[i], (void **) &local_sum);
+        total_cons_sum += *local_sum;
+        free(local_sum);
     }
 
-    // Output results
-    printf("Total produced sum: %d, Total consumed sum: %d\n", total_produced_sum, total_consumed_sum);
-    printf("Total numbers produced: %d, Total numbers consumed: %d\n", total_produced, total_consumed);
+    printf("Total produced sum: %lld\n", total_prod_sum);
+    printf("Total consumed sum: %lld\n", total_cons_sum);
+    printf("Total produced count: %d\n", prod_ctr);
+    printf("Total consumed count: %d\n", cons_ctr);
 
-    // Clean up
-    free(buffer);
-    pthread_mutex_destroy(&mutex);
-    pthread_cond_destroy(&buffer_not_full);
-    pthread_cond_destroy(&buffer_not_empty);
+    // Cleanup
+    free((void *) bounded_buffer);
+    free(prod_arr);
+    free(cons_arr);
+    sem_destroy(&sem_empty);
+    sem_destroy(&sem_full);
+    sem_destroy(&sem_mutex);
 
     return 0;
 }

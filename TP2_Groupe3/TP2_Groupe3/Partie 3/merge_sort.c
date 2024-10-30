@@ -8,13 +8,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    FILE *file = fopen("sorted_array.txt", "w");
-    if (file == NULL) {
-        perror("fopen");
-        exit(1);
-    }
-    fclose(file);
-
     int array_size = atoi(argv[1]);
     int num_processes = atoi(argv[2]);
 
@@ -35,9 +28,9 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < array_size; i++) {
         shared_data->array[i] = rand() % MAX_NUM_SIZE;
     }
+    write_initial_array(array_size, shared_data->array);
 
     execute_merge_sort(0, array_size - 1, num_processes);
-    show_array();
     printf("Temps d'exécution total: %.6f secondes\n", total_time);
 
     sem_destroy(mutex);
@@ -113,10 +106,10 @@ void execute_merge_sort(int start, int end, int num_processes){
     }
     while(wait(NULL) > 0);
 
-    // pp doit fusionner les parties triees par les processus enfants
+    // pp doit merge les parties triees par les processus enfants
     pp_final_merge(start, end, num_processes, part_size);
-
     gettimeofday(&end_time, NULL);
+
     write_array_into_file(start, end, shared_data->array);
 
     long seconds = end_time.tv_sec - start_time.tv_sec;
@@ -163,5 +156,25 @@ void write_array_into_file(int start, int end, int *array) {
 
     fclose(file);
     sem_post(mutex);
+}
+
+void write_initial_array(int array_size, int *array) {
+
+    FILE *file = fopen("sorted_array.txt", "w");
+    if (file == NULL) {
+        perror("fopen");
+        exit(1);
+    }
+
+    fprintf(file, "array = [");
+    for (int i = 0; i < array_size; i++) {
+        if (i != 0) {
+            fprintf(file, ", ");
+        }
+        fprintf(file, "%d", array[i]);
+    }
+    fprintf(file, "]\n");
+
+    fclose(file);
 }
 
